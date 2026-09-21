@@ -1,0 +1,63 @@
+import openai
+import os
+import chromadb
+from dotenv import load_dotenv
+from chromadb.utils import embedding_functions
+load_dotenv()
+
+from openai import OpenAI
+
+openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_ef =  embedding_functions.OpenAIEmbeddingFunction(
+    api_key=openai_api_key, 
+    model_name="text-embedding-3-small"
+)
+
+chroma_client = chromadb.PersistentClient(path="./db2/chromadb_openai")
+
+collection =  chroma_client.get_or_create_collection("openaistory", embedding_function=openai_ef)
+
+documents = [
+    {"id": "a3f9k2", "text": "Штучний ╕нтелект швидко зм╕ню╓ п╕дходи до анал╕зу великих масив╕в даних."},
+    {"id": "b7x1p4", "text": "Сьогодн╕ в Ки╓в╕ оч╕ку╓ться сонячна погода з невеликою хмарн╕стю."},
+    {"id": "c2m8q9", "text": "Кава ╓ одним ╕з найпопулярн╕ших напо╖в у св╕т╕ завдяки сво╓му аромату та бадьорому ефекту."},
+    {"id": "d5z3w7", "text": "Косм╕чн╕ м╕с╕╖ до Марса вимагають ретельного планування через тривал╕сть польоту."},
+    {"id": "e9y6t1", "text": "Football is often called the most popular sport on the planet."},
+    {"id": "f4n0r8", "text": "Читання книг допомага╓ розвивати критичне мислення та розширю╓ словниковий запас."},
+    {"id": "g8k5v2", "text": "The stock market experienced significant volatility during the last quarter."},
+    {"id": "h1c7l3", "text": "Бджоли в╕д╕грають ключову роль в запиленн╕ рослин та п╕дтримц╕ екосистем."},
+    {"id": "i6d4s9", "text": "Renewable energy sources are becoming increasingly cost-effective compared to fossil fuels."},
+    {"id": "j3b2m6", "text": "Укра╖нська кухня славиться борщем, варениками та ╕ншими традиц╕йними стравами."},
+    {"id": "k7p9x4", "text": "Quantum computing promises to solve certain problems exponentially faster than classical computers."},
+    {"id": "l2f8n1", "text": "Подорож╕ розширюють св╕тогляд та дозволяють познайомитися з новими культурами."},
+    {"id": "m5w3q7", "text": "Climate change continues to affect weather patterns across different regions of the world."},
+    {"id": "n9t6y2", "text": "Собаки вважаються одними з найв╕ддан╕ших домашн╕х тварин людини."},
+    {"id": "o4v1k8", "text": "Machine learning models require large amounts of quality data to perform well."},
+    {"id": "p8r5c3", "text": "Мистецтво епохи В╕дродження сутт╓во вплинуло на розвиток зах╕дно╖ культури."},
+    {"id": "q1l7z9", "text": "Electric vehicles are gradually replacing traditional cars in many urban areas."},
+    {"id": "r6s2d4", "text": "Медитац╕я та ф╕зичн╕ вправи допомагають знижувати р╕вень стресу."},
+    {"id": "s3g9m8", "text": "The history of ancient civilizations offers valuable lessons for modern society."},
+    {"id": "t7h4x1", "text": "Технолог╕╖ блокчейн застосовуються не лише в криптовалютах, а й у лог╕стиц╕."}
+]
+
+query_text = "Знайди щось про собак"
+
+for doc in documents:
+    collection.upsert(ids=["id"], documents=[doc["text"]])
+    
+
+#response = client.embeddings.create(
+#    input=documents, model="text-embedding-3-small"
+#)
+
+results = collection.query(
+    query_texts=[query_text],
+    n_results=3
+)
+
+for idx,  document in enumerate(results["documents"][0]):
+    doc_id = results["ids"][0][idx]
+    distance = results["distances"][0][idx]
+    print(
+        f" For the query:{query_text}, \n Foundsimilarities:{results["documents"][0]} with distance:{distance}"
+    )
