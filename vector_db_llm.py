@@ -79,9 +79,48 @@ def init_database():
 
 def query_documents(query_text):
     results = collection.query(query_texts=[query_text],  n_results=3)
-    for idx, document in enumerate(results["documents"][0]):
-        doc_id = results["ids"][0][idx]
-        distance = results["distances"][0][idx]
-        print(f"Found document chunk {document} with relevance {distance} :{doc_id}\n ==========================================")
+    relevant_chunks = [doc for sublist in results["documents"] for doc in sublist]
+    print("==== Returning relevant chunks ====")
+    return relevant_chunks
 
-query_documents("History facts")
+    #for idx, document in enumerate(results["documents"][0]):
+    #    doc_id = results["ids"][0][idx]
+    #    distance = results["distances"][0][idx]
+    #    print(f"Found document chunk {document} with relevance {distance} :{doc_id}\n ==========================================")
+
+
+def generate_response(question, relevant_chunks):
+    context = "\n\n".join(relevant_chunks)
+    prompt = (
+        "You are an assistant for question-answering tasks. Use the following pieces of "
+        "retrieved context to answer the question. If you don't know the answer, say that you "
+        "don't know. Use three sentences maximum and keep the answer concise."
+        "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "system",
+                "content": prompt,
+            },
+            {
+                "role": "user",
+                "content": question,
+            },
+        ],
+    )
+
+    answer = response.choices[0].message
+    return answer
+
+
+question = input()#"give me a brief overview of the articles. Be concise, please."
+relevant_chunks = query_documents(question)
+answer = generate_response(question, relevant_chunks)
+#query_documents("History facts")
+
+
+print("==== Answer ====")
+print(answer.content)
